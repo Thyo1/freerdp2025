@@ -1,12 +1,15 @@
 name: Run Windows 10 on Docker
 
-on: 
+on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   run-docker:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -14,15 +17,17 @@ jobs:
       - name: Setup Docker
         run: |
           sudo apt update
-          sudo apt install -y --no-install-recommends \
-            docker.io docker-compose || true
-          sudo systemctl start docker
-          sudo systemctl enable docker
+          sudo apt install -y docker.io
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+          docker --version
+          docker-compose --version
 
       - name: Create Windows 10 YAML
         run: |
           cat <<EOF > windows10.yml
-          version: '3.8'
+          version: "3"
           services:
             windows:
               image: dockurr/windows
@@ -41,14 +46,15 @@ jobs:
               cap_add:
                 - NET_ADMIN
               ports:
-                - "8006:8006"
-                - "3389:3389/tcp"
-                - "3389:3389/udp"
+                - 8006:8006
+                - 3389:3389/tcp
+                - 3389:3389/udp
               stop_grace_period: 2m
           EOF
 
       - name: Run Windows 10 Container
         run: |
+          sudo systemctl start docker
           sudo docker-compose -f windows10.yml up -d
 
       - name: Check Running Containers
