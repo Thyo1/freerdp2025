@@ -1,31 +1,35 @@
 name: Run Windows 10 on Docker
 
-on:
-  workflow_dispatch: # Bisa dijalankan manual
+on: 
+  push:
+  workflow_dispatch:
 
 jobs:
   run-docker:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Docker
         run: |
           sudo apt update
-          sudo apt install -y docker.io docker-compose
+          sudo apt install -y --no-install-recommends \
+            docker.io docker-compose || true
+          sudo systemctl start docker
+          sudo systemctl enable docker
 
-      - name: Create Windows 10 Config
+      - name: Create Windows 10 YAML
         run: |
-          cat <<EOF > windows10.yaml
+          cat <<EOF > windows10.yml
+          version: '3.8'
           services:
             windows:
               image: dockurr/windows
               container_name: windows
               environment:
                 VERSION: "10"
-                USERNAME: "TOOLBOXLAP"
+                USERNAME: "admin"
                 PASSWORD: "admin@123"
                 RAM_SIZE: "4G"
                 CPU_CORES: "4"
@@ -37,11 +41,15 @@ jobs:
               cap_add:
                 - NET_ADMIN
               ports:
-                - 8006:8006
-                - 3389:3389/tcp
-                - 3389:3389/udp
+                - "8006:8006"
+                - "3389:3389/tcp"
+                - "3389:3389/udp"
               stop_grace_period: 2m
           EOF
 
       - name: Run Windows 10 Container
-        run: sudo docker-compose -f windows10.yaml up -d
+        run: |
+          sudo docker-compose -f windows10.yml up -d
+
+      - name: Check Running Containers
+        run: sudo docker ps -a
