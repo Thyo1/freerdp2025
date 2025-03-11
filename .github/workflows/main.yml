@@ -1,0 +1,21 @@
+name: Run Windows 10 on Docker
+
+on:  
+  workflow_dispatch: # Bisa dijalankan manual
+
+jobs:
+  run-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Docker
+        run: |
+          sudo apt update
+          sudo apt install -y docker.io docker-compose
+
+      - name: Run Windows 10 Container
+        run: |
+          sudo docker-compose -f windows10.yml up -d
