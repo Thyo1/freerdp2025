@@ -14,15 +14,21 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: Fix Docker Dependencies
+        run: |
+          sudo apt remove -y containerd.io
+          sudo apt autoremove -y
+
       - name: Setup Docker
         run: |
           sudo apt update
           sudo apt install -y docker.io
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+          sudo apt install -y docker-compose-plugin
+          sudo systemctl enable --now docker
+          sudo usermod -aG docker $USER
+          newgrp docker
           docker --version
-          docker-compose --version
+          docker-compose version
 
       - name: Create Windows 10 YAML
         run: |
@@ -54,8 +60,7 @@ jobs:
 
       - name: Run Windows 10 Container
         run: |
-          sudo systemctl start docker
-          sudo docker-compose -f windows10.yml up -d
+          docker compose -f windows10.yml up -d
 
       - name: Check Running Containers
-        run: sudo docker ps -a
+        run: docker ps -a
